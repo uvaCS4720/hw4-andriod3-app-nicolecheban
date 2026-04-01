@@ -60,6 +60,21 @@ fun CampusMapsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    CampusMapsContent(
+        uiState = uiState,
+        onDropdownExpandedChange = { viewModel.onDropdownExpandedChange(it) },
+        onTagSelected = { viewModel.onTagSelected(it) },
+        modifier = modifier
+    )
+}
+
+@Composable
+fun CampusMapsContent(
+    uiState: CampusMapsUiState,
+    onDropdownExpandedChange: (Boolean) -> Unit,
+    onTagSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
     // UVA Rotunda Coordinates for initial camera position
     val rotunda = LatLng(38.03567, -78.50365)
     val cameraPositionState = rememberCameraPositionState {
@@ -82,20 +97,20 @@ fun CampusMapsScreen(
                     Icon(
                         Icons.Default.ArrowDropDown,
                         "Dropdown",
-                        Modifier.clickable { viewModel.onDropdownExpandedChange(true) }
+                        Modifier.clickable { onDropdownExpandedChange(true) }
                     )
                 },
-                modifier = Modifier.fillMaxWidth().clickable { viewModel.onDropdownExpandedChange(true) }
+                modifier = Modifier.fillMaxWidth().clickable { onDropdownExpandedChange(true) }
             )
             DropdownMenu(
                 expanded = uiState.isDropdownExpanded,
-                onDismissRequest = { viewModel.onDropdownExpandedChange(false) },
+                onDismissRequest = { onDropdownExpandedChange(false) },
                 modifier = Modifier.fillMaxWidth(0.9f)
             ) {
                 uiState.tags.forEach { tag ->
                     DropdownMenuItem(
                         text = { Text(tag) },
-                        onClick = { viewModel.onTagSelected(tag) }
+                        onClick = { onTagSelected(tag) }
                     )
                 }
             }
@@ -115,7 +130,9 @@ fun CampusMapsScreen(
                 val filteredLocations = if (uiState.selectedTag == "All") {
                     uiState.locations
                 } else {
-                    uiState.locations.filter { it.tags.contains(uiState.selectedTag) }
+                    uiState.locations.filter { location ->
+                        location.tags.any { it.equals(uiState.selectedTag, ignoreCase = true) }
+                    }
                 }
 
                 filteredLocations.forEach { location ->
@@ -151,6 +168,20 @@ fun CampusMapsScreen(
 @Composable
 fun CampusMapsPreview() {
     MyApplicationTheme {
-        CampusMapsScreen(viewModel = MainViewModel())
+        CampusMapsContent(
+            uiState = CampusMapsUiState(
+                locations = listOf(
+                    Location(
+                        name = "Rotunda",
+                        description = "The Rotunda is a building located on The Lawn on the Central Grounds of the University of Virginia.",
+                        tags = listOf("landmark"),
+                        visualCenter = LatLng(38.03567, -78.50365)
+                    )
+                ),
+                tags = listOf("All", "Landmark")
+            ),
+            onDropdownExpandedChange = {},
+            onTagSelected = {}
+        )
     }
 }
