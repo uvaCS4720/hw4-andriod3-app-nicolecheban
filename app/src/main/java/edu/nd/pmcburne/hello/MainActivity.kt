@@ -106,7 +106,7 @@ fun CampusMapsContent(
     onTagSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Default camera position focused on the UVA Rotunda
+    // Default camera position focused on the Rotunda
     val rotunda = LatLng(38.03567, -78.50365)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(rotunda, 15f)
@@ -198,7 +198,7 @@ fun CampusMapsContent(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState
             ) {
-                // Filter locations based on the selected tag
+                // Filter locations based on selected tag
                 val filteredLocations = uiState.locations.filter { location ->
                     location.tags.any { it.equals(uiState.selectedTag, ignoreCase = true) }
                 }

@@ -50,8 +50,7 @@ data class Location(
     val visualCenter: LatLng
 )
 
-// State of the Campus Maps screen.
-
+// State of the Campus Maps screen
 data class CampusMapsUiState(
     val selectedTag: String = "Core",
     val tags: List<String> = listOf("Core"),
@@ -117,7 +116,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        // Synchronize API data into the database on start-up
+        // Synchronize API data into DB on start-up
         syncWithApi()
     }
 
@@ -139,19 +138,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     LocationEntity(
                         id = placemark.id,
                         name = placemark.name,
-                        // Basic HTML/Entity decoding for API descriptions
+
+                        // HTML/Entity decoding for API descriptions
                         description = placemark.description
                             .replace("&code;", "")
                             .replace("&apos;", "'")
                             .replace("&quot;", "\"")
                             .replace("&amp;", "&"),
+
                         latitude = placemark.visualCenter.latitude,
                         longitude = placemark.visualCenter.longitude,
                         tags = placemark.tagList.map { it.lowercase() }
                     )
                 }
                 
-                // insertAll uses REPLACE strategy, so it updates existing entries
+                // insertAll uses REPLACE strategy, updating existing entries
                 locationDao.insertAll(entities)
                 _uiState.update { it.copy(isLoading = false, error = null) }
             } catch (e: Exception) {
