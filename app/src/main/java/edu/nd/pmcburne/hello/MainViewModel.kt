@@ -6,36 +6,21 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-data class MainUIState(
-    val counterValue: Int
+data class CampusMapsUiState(
+    val selectedTag: String = "All",
+    val tags: List<String> = listOf("All", "Academic", "Housing", "Dining", "Athletics"),
+    val isDropdownExpanded: Boolean = false
 )
 
-class MainViewModel(
-    val initialCounterValue: Int = 0
-) : ViewModel() {
-    private val _uiState = MutableStateFlow(MainUIState(initialCounterValue))
-    val uiState: StateFlow<MainUIState> = _uiState.asStateFlow()
+class MainViewModel : ViewModel() {
+    private val _uiState = MutableStateFlow(CampusMapsUiState())
+    val uiState: StateFlow<CampusMapsUiState> = _uiState.asStateFlow()
 
-    fun incrementCounter() {
-        _uiState.update{ currentState ->
-            currentState.copy(counterValue = _uiState.value.counterValue + 1)
-        }
+    fun onTagSelected(tag: String) {
+        _uiState.update { it.copy(selectedTag = tag, isDropdownExpanded = false) }
     }
 
-    fun decrementCounter() {
-        _uiState.update{ currentState ->
-            currentState.copy(counterValue = _uiState.value.counterValue - 1)
-        }
+    fun onDropdownExpandedChange(expanded: Boolean) {
+        _uiState.update { it.copy(isDropdownExpanded = expanded) }
     }
-
-    fun resetCounter() {
-        _uiState.update { currentState ->
-            currentState.copy(counterValue = 0)
-        }
-    }
-
-    val isDecrementEnabled: Boolean
-        get() = _uiState.value.counterValue > 0
-    val isResetEnabled: Boolean
-        get() = _uiState.value.counterValue > 0
 }
