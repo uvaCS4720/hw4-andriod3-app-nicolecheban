@@ -45,8 +45,8 @@ data class Location(
 )
 
 data class CampusMapsUiState(
-    val selectedTag: String = "All",
-    val tags: List<String> = listOf("All"),
+    val selectedTag: String = "Core",
+    val tags: List<String> = listOf("Core"),
     val isDropdownExpanded: Boolean = false,
     val locations: List<Location> = emptyList(),
     val isLoading: Boolean = false,
@@ -86,17 +86,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     Location(
                         name = entity.name,
                         description = entity.description,
-                        tags = entity.tags,
+                        tags = entity.tags.map { formatTag(it) },
                         visualCenter = LatLng(entity.latitude, entity.longitude)
                     )
                 }
                 
-                val allTags = listOf("All") + locations.flatMap { it.tags }.distinct().sorted()
+                // Get unique tags from locations, ensure "Core" is included, and sort alphabetically
+                val uniqueTags = (locations.flatMap { it.tags } + "Core").distinct().sorted()
                 
                 _uiState.update { 
                     it.copy(
                         locations = locations,
-                        tags = allTags.map { tag -> tag.replaceFirstChar { it.uppercase() } }
+                        tags = uniqueTags
                     ) 
                 }
             }
@@ -104,6 +105,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         // 2. Synchronize API data into the database on start-up
         syncWithApi()
+    }
+
+    private fun formatTag(tag: String): String {
+        return tag.replace("_", " ")
+            .split(" ")
+            .filter { it.isNotEmpty() }
+            .joinToString(" ") { it.lowercase().replaceFirstChar { char -> char.uppercase() } }
     }
 
     private fun syncWithApi() {

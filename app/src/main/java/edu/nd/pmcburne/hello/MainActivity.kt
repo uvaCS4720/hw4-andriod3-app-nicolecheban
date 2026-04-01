@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -88,20 +90,32 @@ fun CampusMapsContent(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            OutlinedTextField(
-                value = uiState.selectedTag,
-                onValueChange = { },
-                readOnly = true,
-                label = { Text("Filter by Tag") },
-                trailingIcon = {
-                    Icon(
-                        Icons.Default.ArrowDropDown,
-                        "Dropdown",
-                        Modifier.clickable { onDropdownExpandedChange(true) }
-                    )
-                },
-                modifier = Modifier.fillMaxWidth().clickable { onDropdownExpandedChange(true) }
-            )
+            Box(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = uiState.selectedTag,
+                    onValueChange = { },
+                    readOnly = true,
+                    label = { Text("Filter by Tag") },
+                    trailingIcon = {
+                        Icon(
+                            Icons.Default.ArrowDropDown,
+                            "Dropdown"
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                // Transparent overlay to capture clicks anywhere on the OutlinedTextField
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null // Remove ripple for cleaner look if desired, or keep default
+                        ) {
+                            onDropdownExpandedChange(true)
+                        }
+                )
+            }
             DropdownMenu(
                 expanded = uiState.isDropdownExpanded,
                 onDismissRequest = { onDropdownExpandedChange(false) },
@@ -127,12 +141,9 @@ fun CampusMapsContent(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState
             ) {
-                val filteredLocations = if (uiState.selectedTag == "All") {
-                    uiState.locations
-                } else {
-                    uiState.locations.filter { location ->
-                        location.tags.any { it.equals(uiState.selectedTag, ignoreCase = true) }
-                    }
+                // Filter locations based on the selected tag
+                val filteredLocations = uiState.locations.filter { location ->
+                    location.tags.any { it.equals(uiState.selectedTag, ignoreCase = true) }
                 }
 
                 filteredLocations.forEach { location ->
@@ -170,15 +181,16 @@ fun CampusMapsPreview() {
     MyApplicationTheme {
         CampusMapsContent(
             uiState = CampusMapsUiState(
+                selectedTag = "Landmark",
                 locations = listOf(
                     Location(
                         name = "Rotunda",
                         description = "The Rotunda is a building located on The Lawn on the Central Grounds of the University of Virginia.",
-                        tags = listOf("landmark"),
+                        tags = listOf("Landmark"),
                         visualCenter = LatLng(38.03567, -78.50365)
                     )
                 ),
-                tags = listOf("All", "Landmark")
+                tags = listOf("Core", "Landmark")
             ),
             onDropdownExpandedChange = {},
             onTagSelected = {}
