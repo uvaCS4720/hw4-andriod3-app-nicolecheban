@@ -60,9 +60,8 @@ fun CampusMapsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // UVA Rotunda Coordinates
+    // UVA Rotunda Coordinates for initial camera position
     val rotunda = LatLng(38.03567, -78.50365)
-    val rotundaMarkerState = rememberMarkerState(position = rotunda)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(rotunda, 15f)
     }
@@ -113,29 +112,34 @@ fun CampusMapsScreen(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState
             ) {
-                val title = "The Rotunda"
-                val description = "The Rotunda is the symbol of the University of Virginia, designed by Thomas Jefferson and modeled after the Pantheon in Rome. Completed in 1826, it anchors the north end of the Academical Village and houses the University's library and ceremonial spaces."
+                val filteredLocations = if (uiState.selectedTag == "All") {
+                    uiState.locations
+                } else {
+                    uiState.locations.filter { it.tags.contains(uiState.selectedTag) }
+                }
 
-                MarkerInfoWindowContent(
-                    state = rotundaMarkerState,
-                    title = title
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .widthIn(max = 200.dp)
+                filteredLocations.forEach { location ->
+                    MarkerInfoWindowContent(
+                        state = rememberMarkerState(position = location.visualCenter),
+                        title = location.name
                     ) {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black
-                        )
-                        Text(
-                            text = description,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray
-                        )
+                        Column(
+                            modifier = Modifier
+                                .padding(8.dp)
+                                .widthIn(max = 200.dp)
+                        ) {
+                            Text(
+                                text = location.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black
+                            )
+                            Text(
+                                text = location.description,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
+                        }
                     }
                 }
             }
