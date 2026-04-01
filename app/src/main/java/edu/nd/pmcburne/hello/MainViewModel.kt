@@ -1,5 +1,6 @@
 package edu.nd.pmcburne.hello
 
+import android.annotation.SuppressLint
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -22,12 +23,16 @@ import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.Retrofit
 import retrofit2.http.GET
 
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class VisualCenter(
     val latitude: Double,
     val longitude: Double
 )
 
+// Raw data structure returned by Placemark API
+
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class Placemark(
     val id: Int,
@@ -37,12 +42,15 @@ data class Placemark(
     @SerialName("visual_center") val visualCenter: VisualCenter
 )
 
+// Domain model used by the UI
 data class Location(
     val name: String,
     val description: String,
     val tags: List<String>,
     val visualCenter: LatLng
 )
+
+// State of the Campus Maps screen.
 
 data class CampusMapsUiState(
     val selectedTag: String = "Core",
@@ -58,18 +66,24 @@ interface PlacemarkApi {
     suspend fun getPlacemarks(): List<Placemark>
 }
 
+// Business logic handler for the Campus Maps application.
+// Extends AndroidViewModel to access the Application context
 class MainViewModel(application: Application) : AndroidViewModel(application) {
+    // Single Source of Truth for the UI State
     private val _uiState = MutableStateFlow(CampusMapsUiState())
     val uiState: StateFlow<CampusMapsUiState> = _uiState.asStateFlow()
 
+    // Database access
     private val database = AppDatabase.getDatabase(application)
     private val locationDao = database.locationDao()
 
+    // JSON configuration for Retrofit
     private val json = Json { 
         ignoreUnknownKeys = true 
         coerceInputValues = true
     }
 
+    // Networking setup with Retrofit
     @OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)
     private val retrofit = Retrofit.Builder()
         .baseUrl("https://www.cs.virginia.edu/~wxt4gm/")
@@ -79,7 +93,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val api = retrofit.create(PlacemarkApi::class.java)
 
     init {
-        // 1. Observe the database as the single source of truth
+        // Observe local DB as SST - any change updates UI automatically
         viewModelScope.launch {
             locationDao.getAllLocations().collectLatest { entities ->
                 val locations = entities.map { entity ->
@@ -91,7 +105,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
                 
-                // Get unique tags from locations, ensure "Core" is included, and sort alphabetically
+                // Extract all unique tags, format them, and sort alphabetically
                 val uniqueTags = (locations.flatMap { it.tags } + "Core").distinct().sorted()
                 
                 _uiState.update { 
@@ -103,17 +117,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        // 2. Synchronize API data into the database on start-up
+        // Synchronize API data into the database on start-up
         syncWithApi()
     }
 
+    // Convert raw API tags into user-friendly display tags
     private fun formatTag(tag: String): String {
-        return tag.replace("_", " ")
+        return tag.replace("_", " ") // replace _ with spaces
             .split(" ")
             .filter { it.isNotEmpty() }
-            .joinToString(" ") { it.lowercase().replaceFirstChar { char -> char.uppercase() } }
+            .joinToString(" ") { it.lowercase().replaceFirstChar { char -> char.uppercase() } } // capitalize first letter
     }
 
+    // Fetch new data from API and save it into local Room database
     private fun syncWithApi() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
@@ -123,6 +139,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     LocationEntity(
                         id = placemark.id,
                         name = placemark.name,
+                        // Basic HTML/Entity decoding for API descriptions
                         description = placemark.description
                             .replace("&code;", "")
                             .replace("&apos;", "'")
@@ -142,6 +159,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    // UI event handlers
 
     fun onTagSelected(tag: String) {
         _uiState.update { it.copy(selectedTag = tag, isDropdownExpanded = false) }

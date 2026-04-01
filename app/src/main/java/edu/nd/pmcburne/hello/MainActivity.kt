@@ -58,16 +58,17 @@ class MainActivity : ComponentActivity() {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     topBar = {
+                        // Top bar with app title
                         CenterAlignedTopAppBar(
                             title = { 
                                 Text(
                                     "Campus Maps", 
-                                    color = MaterialTheme.colorScheme.secondary,
+                                    color = MaterialTheme.colorScheme.secondary, // orange
                                     fontWeight = FontWeight.Bold
                                 ) 
                             },
                             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.primary
+                                containerColor = MaterialTheme.colorScheme.primary // dark blue
                             )
                         )
                     },
@@ -85,8 +86,10 @@ fun CampusMapsScreen(
     viewModel: MainViewModel,
     modifier: Modifier = Modifier
 ) {
+    // Trigger recomposition on data changes
     val uiState by viewModel.uiState.collectAsState()
 
+    // Hoist state - pass data and events down to a stateless content composable
     CampusMapsContent(
         uiState = uiState,
         onDropdownExpandedChange = { viewModel.onDropdownExpandedChange(it) },
@@ -103,7 +106,7 @@ fun CampusMapsContent(
     onTagSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // UVA Rotunda Coordinates for initial camera position
+    // Default camera position focused on the UVA Rotunda
     val rotunda = LatLng(38.03567, -78.50365)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(rotunda, 15f)
@@ -124,7 +127,7 @@ fun CampusMapsContent(
                 OutlinedTextField(
                     value = uiState.selectedTag,
                     onValueChange = { },
-                    readOnly = true,
+                    readOnly = true, // User cannot type - must select from list
                     label = { 
                         Text(
                             "Filter by Tag", 
@@ -147,18 +150,21 @@ fun CampusMapsContent(
                     textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.primary),
                     modifier = Modifier.fillMaxWidth()
                 )
-                // Transparent overlay to capture clicks anywhere on the OutlinedTextField
+
+                // Transparent overlay to allow clicks anywhere on the OutlinedTextField instead of just on the arrow
                 Box(
                     modifier = Modifier
                         .matchParentSize()
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
-                            indication = null
+                            indication = null // Remove the default ripple
                         ) {
                             onDropdownExpandedChange(true)
                         }
                 )
             }
+            
+            // List of tags that appears when dropdown is expanded
             DropdownMenu(
                 expanded = uiState.isDropdownExpanded,
                 onDismissRequest = { onDropdownExpandedChange(false) },
@@ -185,7 +191,7 @@ fun CampusMapsContent(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .weight(1f) // Take up remaining screen space
                 .padding(bottom = 16.dp, start = 16.dp, end = 16.dp)
         ) {
             GoogleMap(
@@ -198,6 +204,7 @@ fun CampusMapsContent(
                 }
 
                 filteredLocations.forEach { location ->
+                    // Custom Marker UI (Information Window when clicked)
                     MarkerInfoWindowContent(
                         state = rememberMarkerState(position = location.visualCenter),
                         title = location.name
